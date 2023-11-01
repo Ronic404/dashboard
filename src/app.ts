@@ -1,11 +1,14 @@
+import { json } from 'body-parser'
 import { Server } from 'http'
 import express, { Express } from 'express'
 import { inject, injectable } from 'inversify'
 import 'reflect-metadata'
 
+import { PrismaService } from './database/prisma.service'
 import { UsersController } from './users/users.controller'
 
 import { ILogger } from './logger/logger.interface.js'
+import { IConfigService } from './config/config.service.interface'
 import { IExeptionFilter } from './errors/exeption.filter.interface'
 
 import { TYPES } from './types'
@@ -20,9 +23,15 @@ export class App {
 		@inject(TYPES.ILogger) private logger: ILogger,
 		@inject(TYPES.UsersController) private usersController: UsersController,
 		@inject(TYPES.ExeptionFilter) private exeptionFilter: IExeptionFilter,
+		@inject(TYPES.ConfigService) private configService: IConfigService,
+		@inject(TYPES.PrismaService) private prismaService: PrismaService,
 	) {
 		this.app = express()
 		this.port = 8000
+	}
+
+	private useMiddlewares(): void {
+		this.app.use(json())
 	}
 
 	private useRoutes(): void {
@@ -34,8 +43,10 @@ export class App {
 	}
 
 	public async init(): Promise<void> {
+		this.useMiddlewares()
 		this.useRoutes()
 		this.useExeptionFilters()
+		await this.prismaService.connect()
 		this.server = this.app.listen(this.port, () => {
 			this.logger.log(`Сервер запущен на http://localhost:${this.port}`)
 		})
