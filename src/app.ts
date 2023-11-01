@@ -5,6 +5,7 @@ import { inject, injectable } from 'inversify'
 import 'reflect-metadata'
 
 import { PrismaService } from './database/prisma.service'
+import { AuthMiddleware } from './common/auth.middleware'
 import { UsersController } from './users/users.controller'
 
 import { ILogger } from './logger/logger.interface.js'
@@ -32,6 +33,8 @@ export class App {
 
 	private useMiddlewares(): void {
 		this.app.use(json())
+		const authMiddleware = new AuthMiddleware(this.configService.get('SECRET'))
+		this.app.use(authMiddleware.execute.bind(authMiddleware))
 	}
 
 	private useRoutes(): void {
